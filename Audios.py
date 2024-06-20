@@ -23,36 +23,55 @@ locale.setlocale(locale.LC_ALL, 'pt_BR.utf8')
 
 # Classe DriveMonitor responsável pelo monitoramento e manipulação dos arquivos
 class DriveMonitor:
-    # Método construtor
     def __init__(self):
-        # Configura o Chrome e inicializa os atributos driver, df e log
+        """
+        Método construtor que inicializa o driver do navegador, 
+        configura o sistema de log e cria um DataFrame vazio.
+        """
         self.driver = self.setup_chrome()
-        self.df = pd.DataFrame(columns=["Data Verificacao", "Verificador", "Pesquisador", "ID", "Data da coleta em Campo", "Status do Monitoramento", "Link original do audio (colar)"])
+        self.df = pd.DataFrame(columns=["ID", "Link"])
         self.log = self.setup_logging()
 
-    # Configura o sistema de log
     @staticmethod
     def setup_logging():
-        logging.basicConfig(filename=f'C:/Users/{os.getenv("usuario")}/OneDrive - agorap.com.br/teste.log', level=logging.WARNING)
+        """
+        Configura o sistema de log para registrar mensagens de erro e aviso.
+        
+        Retorna:
+            logger (Logger): Objeto de log configurado.
+        """
+        logging.basicConfig(filename=f'{os.getenv("caminho_log")}', level=logging.WARNING)
         return logging.getLogger()
 
-    # Configura o navegador Chrome com as opções necessárias
     def setup_chrome(self):
-
+        """
+        Configura o navegador Chrome com as opções necessárias e retorna o driver configurado.
+        
+        Retorna:
+            driver (WebDriver): Objeto WebDriver configurado.
+        """
         chromedriver_path = "C:\\Users\\Admin\\.wdm\\drivers\\chromedriver\\chromedriver.exe"
         chrome_options = uc.ChromeOptions()
 
-        #chrome_options.add_argument('--headless')
         chrome_options.add_argument(r'--profile-directory={}'.format(os.getenv("profile_")))
         chrome_options.add_argument(r'--user-data-dir=C:\\Users\\{}\\AppData\\Local\\Google\\Chrome\\User Data\\'.format(os.getenv("usuario")))
 
-        #service = Service(ChromeDriverManager().install())
-        driver = uc.Chrome(version_main=126, executable_path=chromedriver_path, options=chrome_options)#, service=service)
-        driver.maximize_window()  # Maximiza a janela do navegador
+        driver = uc.Chrome(version_main=126, executable_path=chromedriver_path, options=chrome_options)
+        driver.maximize_window()
         return driver
 
-    # Move os arquivos de áudio para um novo diretório
     def move_files_to_new_directory(self, base_audios, destino_audio, id, info, arquivo, origem_audio):
+        """
+        Move os arquivos de áudio para um novo diretório.
+
+        Parâmetros:
+            base_audios (DataFrame): Base de dados de arquivos de áudio.
+            destino_audio (str): Diretório de destino para os arquivos de áudio.
+            id (str): Identificador do arquivo.
+            info (DataFrame): Informações adicionais do arquivo.
+            arquivo (str): Nome do arquivo.
+            origem_audio (str): Diretório de origem dos arquivos de áudio.
+        """
         try:
             if int(id) not in base_audios['ID'].values:
                 caminhoCompleto_old = origem_audio + arquivo
@@ -60,10 +79,8 @@ class DriveMonitor:
                 if not os.path.exists(caminhoCompleto_new):
                     os.makedirs(caminhoCompleto_new)
                 if not os.path.exists(caminhoCompleto_new + '/' + arquivo):
-                    #print(caminhoCompleto_new + '/' + arquivo + '\n')
                     shutil.copy(caminhoCompleto_old, caminhoCompleto_new)
 
-                    # Verificar se o arquivo foi realmente transferido
                     if os.path.exists(caminhoCompleto_new + '/' + arquivo):
                         print("Arquivo transferido com sucesso para:", caminhoCompleto_new)
                     else:
@@ -79,20 +96,55 @@ class DriveMonitor:
         except Exception as e:
             print(f"Erro durante a transferência do arquivo: {e}")
 
-
-    # Obtém o nome do aeroporto a partir da informação da base de dados
     def get_aeroporto_name(self, cursor, info):
+        """
+        Obtém o nome do aeroporto a partir da informação da base de dados.
+
+        Parâmetros:
+            cursor (Cursor): Cursor do banco de dados.
+            info (DataFrame): Informações adicionais do arquivo.
+
+        Retorna:
+            aeroporto_nome (str): Nome do aeroporto.
+        """
         id_aeroporto = info['id_aeroportos'].values[0]
         cursor.execute(os.getenv("Query_banco_id")+f"{id_aeroporto};")
         aeroporto_nome = pd.DataFrame(cursor.fetchall(), columns=cursor.column_names)
         return aeroporto_nome['ICAO'].values[0]
 
-    # Retorna o mês em português, com base na data de início
     def get_mes(self, info):
+        """
+        Retorna o mês em português, com base na data de início.
+
+        Parâmetros:
+            info (DataFrame): Informações adicionais do arquivo.
+
+        Retorna:
+            mes (str): Nome do mês em português.
+        """
         return datetime(pd.DatetimeIndex(info['Data_Inicio']).year.values[0], pd.DatetimeIndex(info['Data_Inicio']).month.values[0], pd.DatetimeIndex(info['Data_Inicio']).day.values[0]).strftime("%B").capitalize()
 
-    # Processa um único arquivo de áudio, automatizando ações no Google Drive
     def process_individual_file(self, df, log, driver, base_audios, planilha, id, info, arquivo, count, erro, book, page):
+        """
+        Processa um único arquivo de áudio, automatizando ações no Google Drive.
+
+        Parâmetros:
+            df (DataFrame): DataFrame para armazenar os links obtidos.
+            log (Logger): Objeto de log para registrar eventos.
+            driver (WebDriver): Driver do navegador.
+            base_audios (DataFrame): Base de dados de arquivos de áudio.
+            planilha (str): Caminho da planilha Excel.
+            id (str): Identificador do arquivo.
+            info (DataFrame): Informações adicionais do arquivo.
+            arquivo (str): Nome do arquivo.
+            count (int): Contador de arquivos processados.
+            erro (int): Contador de erros.
+            book (Workbook): Objeto da planilha Excel.
+            page (Worksheet): Página da planilha Excel.
+
+        Retorna:
+            link_obtido (str): Link público do arquivo no Google Drive.
+        """
         ident = []
         link = []
         Data = []
@@ -116,29 +168,21 @@ class DriveMonitor:
                 self.driver.get(final_url)
 
                 try:
-
-                    #WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH,f'//*[@guidedhelpid="main_container"]//*[@data-tooltip="{arquivo}"]')).click()
                     WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH,f'//*[@guidedhelpid="main_container"]//*[@aria-label="{arquivo} Áudio Mais informações (Alt + →)"]')).click()
 
                     element_to_click = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="drive_main_page"]//*[@aria-label="Copiar link"]')))
 
-                    # Agora clique no elemento
                     element_to_click.click()
-
-                    # Pausa por um tempo (opcional, mas pode ajudar)
                     time.sleep(5)
-
-                    # Usa JavaScript para pegar o link da área de transferência
                     link_obtido = driver.execute_script("return navigator.clipboard.readText().then(text => text);")
 
                 except:
                     link_obtido = ''
 
                 finally:
-
-                    if not link_obtido:  # Se o link for vazio
+                    if not link_obtido:
                         print('Sem link')
-                        return None  # Retorna None para indicar falha
+                        return None
 
                     print(link_obtido)
 
@@ -191,15 +235,32 @@ class DriveMonitor:
 
         return link_obtido
 
-    # Retorna o caminho completo para o novo diretório
     def get_complete_new_path(self, destino_audio, info):
+        """
+        Retorna o caminho completo para o novo diretório.
+
+        Parâmetros:
+            destino_audio (str): Diretório de destino para os arquivos de áudio.
+            info (DataFrame): Informações adicionais do arquivo.
+
+        Retorna:
+            caminhoCompleto (str): Caminho completo para o novo diretório.
+        """
         aeroporto = self.get_aeroporto_name(cursor, info)
         mes = self.get_mes(info)
         return destino_audio + aeroporto + '/' + str(pd.DatetimeIndex(info['Data_Inicio']).year.values[0]) + '/' + mes
 
-    # Processa todos os arquivos de áudio na origem especificada
     def process_files(self, base, base_audios, planilha, origem_audio, destino_audio):
-        #actions = ActionChains(self.driver)
+        """
+        Processa todos os arquivos de áudio na origem especificada.
+
+        Parâmetros:
+            base (DataFrame): Base de dados.
+            base_audios (DataFrame): Base de dados de arquivos de áudio.
+            planilha (str): Caminho da planilha Excel.
+            origem_audio (str): Diretório de origem dos arquivos de áudio.
+            destino_audio (str): Diretório de destino para os arquivos de áudio.
+        """
         count = 0
         erro = 0
         book = load_workbook(planilha)
@@ -219,19 +280,26 @@ class DriveMonitor:
                 else:
                     MAX_TENTATIVAS = 3
                     for tentativa in range(MAX_TENTATIVAS):
-                        link = self.process_individual_file(self.df, self.log, self.driver, base_audios, planilha, id, info,arquivo, count, erro, book, page)
-                        if link:  # Se um link válido for retornado, sai do loop de re-tentativas
+                        link = self.process_individual_file(self.df, self.log, self.driver, base_audios, planilha, id, info, arquivo, count, erro, book, page)
+                        if link:
                             break
-                        time.sleep(5)  # Espera um pouco antes de tentar novamente
+                        time.sleep(5)
 
-    # Inicia o processo de monitoramento
     def run(self, banco_dados, planilha, origem_audio, destino_audio):
+        """
+        Inicia o processo de monitoramento.
+
+        Parâmetros:
+            banco_dados (DataFrame): Base de dados.
+            planilha (str): Caminho da planilha Excel.
+            origem_audio (str): Diretório de origem dos arquivos de áudio.
+            destino_audio (str): Diretório de destino para os arquivos de áudio.
+        """
         os.system("echo off | clip")
         base = banco_dados
         base_audios = pd.read_excel(planilha, sheet_name=os.getenv("sheet_name"))
         self.process_files(base, base_audios, planilha, origem_audio, destino_audio)
         self.driver.quit()
-
 
 # Se este script for o principal em execução
 if __name__ == "__main__":

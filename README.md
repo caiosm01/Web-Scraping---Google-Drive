@@ -29,11 +29,6 @@
     Query_banco = 'select * from banco.tabela;'                                ##Query de seleção da tabela desejada
     Query_banco_id = 'SELECT coluna FROM banco.tabela2 where coluna2='         ##Parte da query para fornecer a sigla do aeroporto, de acordo com o seu id que será processada no código
 
-    link_x = 1116                                                              ##Coordenada x do botão 'Copiar link'
-    link_y = 761                                                               ##Coordenada y do botão 'Copiar link'
-
-    concluido_x = 1459                                                         ##Coordenada x do botão 'Concluído'
-    concluido_y = 761                                                          ##Coordenada y do botão 'Concluído'
 
     planilha = 'C:/Users/Admin/Documents/planilha_de_registros.xlsx'           ##Planilha na qual deseja registrar os links copiados
     sheet_name= 'Planilha1'                                                    ##Nome da pasta de trabalho
