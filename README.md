@@ -1,7 +1,7 @@
 
 <h1>Drive Monitor</h1>
 
-<p>O projeto <strong>Drive Monitor</strong> foi desenvolvido para automatizar a tarefa de monitoramento e manipulação de arquivos de áudio armazenados no Google Drive. O programa também interage com um banco de dados MySQL para recuperar informações relevantes.</p>
+<p>O projeto <strong>Drive Monitor</strong> foi desenvolvido para automatizar a tarefa de monitoramento e manipulação de arquivos de áudio armazenados no Google Drive. O programa também interage com um banco de dados MySQL para recuperar informações relevantes (descrição do projeto: https://www.behance.net/gallery/201376925/Web-Scraping-Google-Drive).</p>
 
 <h2>Funcionalidades</h2>
 
